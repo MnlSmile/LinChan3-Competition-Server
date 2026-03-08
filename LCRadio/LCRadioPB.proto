@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+message Envelope {
+    int32 type = 1;
+    string uuid = 2;
+    bytes data = 3;
+}
+
+message URLPlayQuery {
+    string uuid = 1;
+}
+
+message URLPlayResponse {
+    string uuid = 1;
+}
+message URLBrowseQuery {
+    string uuid = 1;
+}
+
+message URLBrowseResponse {
+    string uuid = 1;
+}
+message URLCacheQuery {
+    string uuid = 1;
+}
+
+message URLCacheResponse {
+    string uuid = 1;
+}
+message NCMPlayQuery {
+    string uuid = 1;
+}
+
+message NCMPlayResponse {
+    string uuid = 1;
+}
+message NCMPluginPlayQuery {
+    string uuid = 1;
+}
+
+message NCMPluginPlayResponse {
+    string uuid = 1;
+}
+message NCMCacheQuery {
+    string uuid = 1;
+}
+
+message NCMCacheResponse {
+    string uuid = 1;
+}
+message DouyinPlayQuery {
+    string uuid = 1;
+}
+
+message DouyinPlayResponse {
+    string uuid = 1;
+}
+message DouyinBrowseQuery {
+    string uuid = 1;
+}
+
+message DouyinBrowseResponse {
+    string uuid = 1;
+}
+message DouyinCacheQuery {
+    string uuid = 1;
+}
+
+message DouyinCacheResponse {
+    string uuid = 1;
+}
+message BilibiliPlayQuery {
+    string uuid = 1;
+}
+
+message BilibiliPlayResponse {
+    string uuid = 1;
+}
+message BilibiliBrowseQuery {
+    string uuid = 1;
+}
+
+message BilibiliBrowseResponse {
+    string uuid = 1;
+}
+message BilibiliCacheQuery {
+    string uuid = 1;
+}
+
+message BilibiliCacheResponse {
+    string uuid = 1;
+}

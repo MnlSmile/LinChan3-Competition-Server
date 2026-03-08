@@ -10,9 +10,15 @@ import asyncio as aio
 import traceback
 import uuid
 import shutil
-from fastapi import FastAPI, Request
+import psutil
+
+from fastapi import FastAPI, Request, APIRouter
+from fastapi.responses import *
 from pydantic import BaseModel
 from typing import Any
+
+import LCRadio
+import yggdrasil
 
 class MySQLConnectionPool:
     def __init__(self) -> None:
@@ -39,9 +45,18 @@ class MySQLConnectionPool:
 
 pool = MySQLConnectionPool()
 
-app = FastAPI(root_path='/LinChan3-Competition/api/v1')
+app = FastAPI()
+api = APIRouter(prefix='/LinChan3-Competition/api/v1')
+web = APIRouter(prefix='/LinChan3-Competition/web')
+app.include_router(LCRadio.api)
+app.include_router(yggdrasil.api)
+
+def disable(*args, **kwargs):
+    def _(*args, **kwargs): return
+    return _
 
 @app.on_event("startup")
+#@disable
 async def startup_event():
     await pool.initialize()
 
@@ -94,7 +109,7 @@ def get_processes_by_port(port):
     
     return result
 
-@app.post('/pillars_of_fortune/download_metadata')
+@api.post('/pillars_of_fortune/download_metadata')
 async def download_metadata(metadata:POFMetadata) -> POFMetadata:
     global test_uuid_id_map
     
@@ -153,15 +168,15 @@ async def download_metadata(metadata:POFMetadata) -> POFMetadata:
     
     return metadata
 
-@app.get('/pillars_of_fortune/get_time_millisec')
+@api.get('/pillars_of_fortune/get_time_millisec')
 async def get_time_millisec() -> dict:
     return {"time": time.time() * 1000}
 
-@app.post('/pillars_of_fortune/require_start')
+@api.post('/pillars_of_fortune/require_start')
 async def require_start(metadata:POFMetadata) -> POFMetadata:
     return metadata
 
-@app.post('/pillars_of_fortune/require_close')
+@api.post('/pillars_of_fortune/require_close')
 async def require_close(metadata:POFMetadata, req:Request) -> dict:
     if req.client.host in ['127.0.0.1']:
         procs = get_processes_by_port(req.client.port)
@@ -178,7 +193,7 @@ async def require_close(metadata:POFMetadata, req:Request) -> dict:
     else:
         return {'status': 'failed'}
 
-@app.post('/pillars_of_fortune/upload_result')
+@api.post('/pillars_of_fortune/upload_result')
 async def upload_result(metadata:POFMetadata) -> dict:
     db = await pool.acquire()
     async with db.cursor() as cur:
@@ -213,7 +228,62 @@ async def upload_result(metadata:POFMetadata) -> dict:
     return {}
 
 # https://idlist.projectxero.top/data/beta/vanilla.json
-@app.get('/pillars_of_fortune/download_minecraft_item_list')
+@api.get('/pillars_of_fortune/download_minecraft_item_list')
 async def download_minecraft_item_list(version:str='0.1.21.131') -> dict:
     with open('./minecraft_be_manifests_1.21.131.json', 'r', encoding='utf-8') as f:
         return json.load(f)['enums']['item']
+
+@api.get('/pillars_of_fortune/query_match')
+async def query_match(id:int) -> Response:
+    db = await pool.acquire()
+    async with db.cursor() as cur:
+        pof = pypika.Table('pillars_of_fortune')
+        retry_count = 0
+        while retry_count < 10:
+            query = pypika.MySQLQuery.from_(pof).select(
+                pof.uuid,
+                pof.id,
+                pof.creationTime,
+                pof.version,
+                pof.minecraftVersion,
+                pof.playersCount,
+                pof.playerList,
+                pof.game,
+                pof.LCCompetitionServerVersion,
+                pof.replayFilePath,
+                pof.replayRemotePath,
+                pof.started,
+                pof.canceled,
+                pof.finished,
+                pof.startReason,
+                pof.cancelReason,
+                pof.finishReason,
+                pof.startTime,
+                pof.finishTime,
+                pof.ranking,
+                pof.data
+            )
+            await cur.execute(str(query))
+            result = await cur.fetchall()
+            if len(result):
+                return dict(result[0])
+            else:
+                retry_count += 1
+
+@web.get('/POF/history')
+async def web_POF_history() -> FileResponse:
+    return FileResponse('./POF/history.html')
+
+@api.get('/common/server_status')
+async def server_status() -> dict:
+    cpu = psutil.cpu_percent()
+    _mem = psutil.virtual_memory()
+    ram = [_mem.total, _mem.used, _mem.percent]
+    return {
+        "cpu": cpu,
+        "ram": ram
+    }
+
+
+app.include_router(api)
+app.include_router(web)

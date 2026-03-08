@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>LinChan3 · 幸运之柱 · 对局详情</title>
+    <style>
+        /* ===== 全局重置与字体 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 30%, #0c1a2b, #030712);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #e2e8f0;
+            line-height: 1.5;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* ===== 加载与错误状态 ===== */
+        .status-container {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 32px;
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(34, 211, 238, 0.1);
+            max-width: 600px;
+            margin: 2rem auto;
+        }
+
+        .spinner {
+            border: 3px solid rgba(34, 211, 238, 0.15);
+            border-top: 3px solid #22d3ee;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-icon {
+            font-size: 3.5rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.9;
+        }
+
+        /* ===== 主卡片 & 网格 ===== */
+        .match-dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .glass-card {
+            background: rgba(17, 25, 40, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(71, 85, 105, 0.35);
+            border-radius: 28px;
+            padding: 1.8rem 2rem;
+            box-shadow: 0 10px 25px -10px rgba(0,0,0,0.5), 0 0 0 1px rgba(56, 189, 248, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 18px 30px -12px #0f172a, 0 0 0 1px #38bdf8;
+        }
+
+        /* ===== 头部 ===== */
+        .match-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .pof-id {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            background: linear-gradient(135deg, #bae6fd, #7dd3fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 8px rgba(14, 165, 233, 0.3);
+        }
+
+        .pof-badge {
+            background: rgba(2, 132, 199, 0.18);
+            border-radius: 100px;
+            padding: 0.3rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid #0e7490;
+            color: #a5f3fc;
+            backdrop-filter: blur(4px);
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.8rem;
+        }
+
+        .info-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 0.7rem 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #94a3b8;
+            font-weight: 450;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #f1f5f9;
+            background: rgba(30, 41, 59, 0.5);
+            padding: 0.2rem 0.9rem;
+            border-radius: 20px;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+
+        .section-title {
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: #e0f2fe;
+            border-left: 5px solid #38bdf8;
+            padding-left: 1rem;
+        }
+
+        .player-rank-table {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .rank-item {
+            background: rgba(21, 31, 50, 0.7);
+            border-radius: 18px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            backdrop-filter: blur(4px);
+            transition: transform 0.1s ease;
+        }
+
+        .rank-item:hover {
+            background: rgba(31, 46, 71, 0.8);
+            border-color: #0284c7;
+        }
+
+        .player-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .eliminated-tag {
+            background: #991b1b;
+            color: #fee2e2;
+            padding: 0.25rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid #ef4444;
+        }
+
+        .survivor-tag {
+            background: #0f3a3a;
+            color: #ccfbf1;
+            padding: 0.25rem 0.9rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid #14b8a6;
+        }
+
+        .stat-highlight {
+            display: flex;
+            gap: 1.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        .stat-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #bae6fd;
+        }
+
+        .eliminate-reason {
+            font-size: 0.85rem;
+            background: #1e293b;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            color: #cbd5e1;
+        }
+
+        .pillar-param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        .param-item {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 16px;
+            padding: 0.9rem 1.2rem;
+            border-left: 4px solid #0e7490;
+        }
+
+        .param-name {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-bottom: 0.25rem;
+        }
+
+        .param-value {
+            font-size: 1.2rem;
+            font-weight: 650;
+            color: #f0f9ff;
+        }
+
+        .param-desc {
+            font-size: 0.75rem;
+            color: #7dd3fc;
+            opacity: 0.9;
+        }
+
+        .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem 2.5rem;
+            margin-top: 0.8rem;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(100, 116, 139, 0.3);
+            padding-top: 1.5rem;
+        }
+
+        @media (max-width: 750px) {
+            body { padding: 1.2rem; }
+            .glass-card { padding: 1.3rem; }
+            .grid-2col { grid-template-columns: 1fr; gap: 1.2rem; }
+            .pof-id { font-size: 1.9rem; }
+            .match-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+        }
+
+        .version-chip {
+            font-family: monospace;
+            background: #111827;
+            padding: 0.25rem 0.8rem;
+            border-radius: 30px;
+            border: 1px solid #374151;
+        }
+
+        .player-avatar-placeholder {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border-radius: 50%;
+            border: 1px solid #38bdf8;
+            margin-right: 0.3rem;
+        }
+
+        a {
+            color: #7dd3fc;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 初始加载状态，会通过JavaScript动态替换 -->
+        <div class="status-container">
+            <div class="spinner"></div>
+            <div style="font-size: 1.2rem; color: #bae6fd;">⚡ 连接竞技场 · 加载对局数据</div>
+            <div style="margin-top: 0.8rem; font-size: 0.9rem; color: #7ca2b4;">正在向服务器请求信息</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            "use strict";
+
+            // ---------- 安全的HTML转义（防止XSS，尽管数据可信但习惯）--------
+            const escapeHTML = (str) => {
+                if (str === undefined || str === null) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            };
+
+            // ---------- 工具函数 ----------
+            const formatTimestamp = (ts) => {
+                if (!ts || ts === -1) return '—';
+                const date = new Date(Number(ts));
+                return date.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '-');
+            };
+
+            const formatDuration = (ms) => {
+                if (ms === undefined || ms === -1) return '—';
+                if (ms < 1000) return `${ms}ms`;
+                return (ms / 1000).toFixed(2) + 's';
+            };
+
+            // 解析范围显示
+            const formatRange = (rangeArr) => {
+                if (!Array.isArray(rangeArr) || rangeArr.length < 2) return '未知';
+                if (rangeArr[0] === rangeArr[1]) return `${rangeArr[0]}`;
+                return `${rangeArr[0]} ～ ${rangeArr[1]}`;
+            };
+
+            // ---------- 获取URL参数 id ----------
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryId = urlParams.get('id');
+            const appDiv = document.getElementById('app');
+
+            // ---------- 如果没有id参数，显示错误 ----------
+            if (!queryId) {
+                appDiv.innerHTML = `
+                    <div class="status-container" style="border-color: rgba(239,68,68,0.4);">
+                        <div class="error-icon">⚠️</div>
+                        <div style="font-size: 1.6rem; font-weight: 600; color: #fecaca;">缺少对局ID</div>
+                        <div style="margin-top: 1rem; color: #cbd5e1; background: #1f2937; padding: 0.8rem 1.2rem; border-radius: 50px;">
+                            URL中请提供 ?id=整数 参数
+                        </div>
+                        <div style="margin-top: 1.8rem; font-size: 0.9rem; color: #9ca3af;">
+                            示例: ?id=5
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 验证是否为整数
+            if (!/^\d+$/.test(queryId)) {
+                appDiv.innerHTML = `
+                    <div class="status-container" style="border-color: rgba(245,158,11,0.5);">
+                        <div class="error-icon">❓</div>
+                        <div style="font-size: 1.6rem; font-weight: 600; color: #fed7aa;">无效参数</div>
+                        <div style="margin-top: 1rem; color: #e2e8f0;">ID 必须是正整数</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // ---------- 加载状态 ----------
+            appDiv.innerHTML = `
+                <div class="status-container">
+                    <div class="spinner"></div>
+                    <div style="font-size: 1.2rem; color: #bae6fd;">🏹 召唤幸运之柱 · 对局 #${escapeHTML(queryId)}</div>
+                    <div style="margin-top: 0.8rem; font-size: 0.9rem; color: #7ca2b4;">正在从竞技服务器获取详细战报...</div>
+                </div>
+            `;
+
+            // ---------- API 请求地址 ----------
+            const API_URL = `http://47.119.20.145:5799/LinChan3-Competition/api/v1/pillars_of_fortune/query_match?id=${encodeURIComponent(queryId)}`;
+
+            // ---------- 主渲染函数：接受后端JSON数据 ----------
+            function renderMatch(data) {
+                // 防御
+                if (!data || typeof data !== 'object') {
+                    throw new Error('无效的比赛数据');
+                }
+
+                // 提取核心字段 —— 使用安全默认值
+                const matchId = data.id ?? '?';
+                const creationTime = data.creationTime ?? null;
+                const startTime = data.startTime ?? null;
+                const finishTime = data.finishTime ?? null;
+                const playersCount = data.playersCount ?? 0;
+                const playerList = Array.isArray(data.playerList) ? data.playerList : [];
+                const game = data.game ?? 'pillars_of_fortune';
+                const finished = data.finished ?? false;
+                const canceled = data.canceled ?? false;
+                const finishReason = data.finishReason ?? '';
+                const startReason = data.startReason ?? '';
+                const serverVer = data.LCCompetitionServerVersion ?? '0.9.0';
+                const mcVer = data.minecraftVersion ?? '';
+
+                // ranking 与 participantInfo
+                const ranking = Array.isArray(data.ranking) ? data.ranking : [];
+                const participantInfo = data.data?.participantInfo ?? {};
+                const pillarParams = data.data?.pillarParams ?? {};
+                const phase = data.data?.phase ?? '未知';
+                const eliminatedParticipants = Array.isArray(data.data?.eliminatedParticipants) ? data.data.eliminatedParticipants : [];
+
+                // 构建对局ID展示 POF#{id}
+                const pofDisplay = `POF#${escapeHTML(matchId)}`;
+
+                // ========== 拼装HTML ==========
+                let html = `
+                    <div class="match-dashboard">
+                        <!-- 主卡片：ID与状态 -->
+                        <div class="glass-card">
+                            <div class="match-header">
+                                <span class="pof-id">${pofDisplay}</span>
+                                <span class="pof-badge">⚔️ ${game === 'pillars_of_fortune' ? '幸运之柱' : escapeHTML(game)}</span>
+                            </div>
+                            <span class="info-label">偷了点懒，本页面由 DeepSeek AI 生成</span>
+                            <div class="grid-2col" style="margin-top: 0.5rem;">
+                                <div>
+                                    <div class="info-row"><span class="info-label">📅 创建时间</span><span class="info-value">${formatTimestamp(creationTime)}</span></div>
+                                    <div class="info-row"><span class="info-label">🚦 开始时间</span><span class="info-value">${formatTimestamp(startTime)}</span></div>
+                                    <div class="info-row"><span class="info-label">🏁 结束时间</span><span class="info-value">${formatTimestamp(finishTime)}</span></div>
+                                </div>
+                                <div>
+                                    <div class="info-row"><span class="info-label">👥 玩家数量</span><span class="info-value">${escapeHTML(playersCount)}</span></div>
+                                    <div class="info-row"><span class="info-label">🎮 对局状态</span>
+                                        <span class="info-value" style="background: ${finished ? (canceled ? '#713f12' : '#0f3a4a') : '#3b2e0f'}">
+                                            ${finished ? (canceled ? '已取消' : '已结束') : '进行中'}
+                                            ${finishReason}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.8rem;">
+                                <span class="version-chip">🖥️ 小游戏版本 ${escapeHTML(serverVer)}</span>
+                                <span class="version-chip">⛏️ Minecraft 版本 ${escapeHTML(mcVer)}</span>
+                            </div>
+                        </div>
+
+                        <!-- 玩家/排名 卡片 -->
+                        <div class="glass-card">
+                            <div class="section-title">🏆 排名</div>
+                            <div class="player-rank-table">
+                `;
+
+                // 构建玩家排名列表 (按照ranking顺序)
+                if (ranking.length === 0) {
+                    html += `<div style="color: #9ca3af; padding: 1rem;">暂无排名数据</div>`;
+                } else {
+                    ranking.forEach((rankItem, index) => {
+                        const playerName = rankItem.player ?? '未知玩家';
+                        const eliminated = rankItem.eliminated ?? false;
+                        const survivedMs = rankItem.survivedDuration ?? 0;
+                        // 从 participantInfo 获取详细淘汰原因与淘汰时间
+                        const pinfo = participantInfo[playerName] || {};
+                        const eliminateReason = pinfo.eliminateReason || (eliminated ? 'normal' : '');
+                        const eliminateTime = pinfo.eliminateTime ?? -1;
+
+                        const medalEmoji = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : `#${index+1}`));
+                        html += `
+                            <div class="rank-item">
+                                <div style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                                    <span style="font-size: 1.4rem; filter: drop-shadow(0 0 4px #0284c7);">${medalEmoji}</span>
+                                    <span class="player-name">
+                                        <span class="player-avatar-placeholder" style="display: inline-block; vertical-align: middle;"></span>
+                                        ${escapeHTML(playerName)}
+                                    </span>
+                                    ${eliminated ? 
+                                        '<span class="eliminated-tag">❌ 淘汰</span>' : 
+                                        '<span class="survivor-tag">✨ 幸存</span>'
+                                    }
+                                    ${eliminateReason && eliminateReason !== 'normal' ? `<span class="eliminate-reason">原因: ${escapeHTML(eliminateReason)}</span>` : ''}
+                                </div>
+                                <div class="stat-highlight">
+                                    <div class="stat-badge">
+                                        <span class="stat-label">存活时间</span>
+                                        <span class="stat-number">${formatDuration(survivedMs)}</span>
+                                    </div>
+                                    ${eliminateTime && eliminateTime !== -1 ? `
+                                    <div class="stat-badge">
+                                        <span class="stat-label">淘汰时刻</span>
+                                        <span class="stat-number" style="font-size: 0.95rem;">${formatTimestamp(eliminateTime)}</span>
+                                    </div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // 玩家列表补充（全玩家）
+                html += `</div>`;
+                if (playerList.length > 0) {
+                    html += `<div style="margin-top: 1.3rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; border-top: 1px solid #1e293b; padding-top: 1.3rem;">
+                        <span style="color: #94a3b8; font-size: 0.9rem;">👤 全部参赛:</span>`;
+                    playerList.forEach(p => {
+                        html += `<span style="background: #1e293b; border-radius: 30px; padding: 0.2rem 1rem; border:1px solid #334155;">${escapeHTML(p)}</span>`;
+                    });
+                    html += `</div>`;
+                }
+
+                // 淘汰汇总
+                if (eliminatedParticipants.length > 0) {
+                    html += `<div style="margin-top: 0.8rem; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;">
+                        <span style="color: #f87171; font-size:0.9rem;">⚰️ 淘汰名单:</span>`;
+                    eliminatedParticipants.forEach(ep => {
+                        html += `<span style="color: #e2e8f0; background: #7f1d1d; padding: 0.2rem 0.9rem; border-radius: 20px; font-size:0.85rem;">${escapeHTML(ep)}</span>`;
+                    });
+                    html += `</div>`;
+                }
+                html += `</div>`;
+
+                // ---------- 支柱参数 与 对局细节 ----------
+                html += `<div class="glass-card">
+                    <div class="section-title">🏗️ 幸运之柱 · 世界参数</div>
+                    <div class="pillar-param-grid">`;
+
+                // pillarParams 解析
+                const circleRadius = pillarParams.circleRadius ?? -1;
+                const distance = pillarParams.distance ?? -1;
+                const height = pillarParams.height ?? -1;
+                const radius = pillarParams.radius ?? -1;
+
+                // 距离
+                html += `<div class="param-item"><div class="param-name">📏 柱距</div>`;
+                if (distance) html += `<div class="param-value">${escapeHTML(distance)}</div>`;
+                else html += `<div class="param-value">${distance !== -1 ? distance : '默认'}</div>`;
+                html += `<div class="param-desc">随机</div></div>`;
+
+                // 高度
+                html += `<div class="param-item"><div class="param-name">⬆️ 柱高</div>`;
+                if (height) html += `<div class="param-value">${escapeHTML(height)}</div>`;
+                else html += `<div class="param-value">${height !== -1 ? height : '随机'}</div>`;
+                html += `<div class="param-desc">随机</div></div>`;
+
+                // 半径
+                html += `<div class="param-item"><div class="param-name">🎯 柱径</div>`;
+                if (radius) html += `<div class="param-value">${escapeHTML(radius)}</div>`;
+                else html += `<div class="param-value">${radius !== -1 ? radius : '1'}</div>`;
+                html += `<div class="param-desc">固定</div></div>`;
+
+                // 圆环半径
+                html += `<div class="param-item"><div class="param-name">🔄 圆径</div>`;
+                html += `<div class="param-value">随机</div>`;
+                html += `<div class="param-desc">战斗边界</div></div>`;
+
+                // 额外展示阶段 (已经展示过，再补充更详细)
+                html += `<div class="param-item"><div class="param-name">⚡ 当前阶段</div>`;
+                html += `<div class="param-value" style="color: #fcd34d;">${escapeHTML(phase)}</div>`;
+                html += `<div class="param-desc">对局进度</div></div>`;
+
+                html += `</div>`; // 关闭param-grid
+
+                // 补充其他data内部字段
+                if (data.data) {
+                    html += `<div style="margin-top: 1.6rem; display: flex; flex-wrap: wrap; gap: 1.2rem;">`;
+                    if (data.data.pillarParams && data.data.pillarParams.circleRadius === -1) {
+                        // 无需重复
+                    }
+                    html += `</div>`;
+                }
+
+                // ---------- 底部元信息 (回放路径、服务器等) ----------
+                html += `<div class="footer-meta">
+                            <span>🔄 回放文件: ${data.replayFilePath ? escapeHTML(data.replayFilePath) : '未记录'}</span>
+                            <span>☁️ 远程路径: ${data.replayRemotePath ? escapeHTML(data.replayRemotePath) : '无'}</span>
+                            <span>🆔 请求ID: ${escapeHTML(queryId)}</span>
+                        </div>`;
+
+                html += `</div>`; // 关闭参数卡片
+                html += `</div>`; // 关闭match-dashboard
+
+                appDiv.innerHTML = html;
+            }
+
+            // ---------- 发起API请求 ----------
+            fetch(API_URL, {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status} — 服务器响应异常`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 请求成功，渲染数据
+                try {
+                    renderMatch(data);
+                } catch (renderErr) {
+                    console.error(renderErr);
+                    appDiv.innerHTML = `
+                        <div class="status-container" style="border-color: #b45309;">
+                            <div class="error-icon">⚠️</div>
+                            <div style="font-size: 1.5rem; font-weight: 600; color: #fdba74;">渲染失败</div>
+                            <div style="margin-top: 0.8rem; color: #e2e8f0;">${escapeHTML(renderErr.message)}</div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Fetch Error:', error);
+                appDiv.innerHTML = `
+                    <div class="status-container" style="border-color: rgba(239,68,68,0.6); background: rgba(30,20,30,0.9);">
+                        <div class="error-icon">🚨</div>
+                        <div style="font-size: 1.6rem; font-weight: 600; color: #fecaca;">无法获取对局</div>
+                        <div style="margin-top: 0.8rem; background: #2d1a1a; padding: 1rem; border-radius: 16px; color: #fbbf24;">
+                            ${escapeHTML(error.message)}
+                        </div>
+                        <div style="margin-top: 1.2rem; color: #9ca3af;">
+                            请确认API服务可用，且ID <span style="background: #111; padding:0.2rem 0.6rem; border-radius:12px;">${escapeHTML(queryId)}</span> 存在
+                        </div>
+                    </div>
+                `;
+            });
+        })();
+    </script>
+</body>
+</html>
