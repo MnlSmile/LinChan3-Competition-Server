@@ -103,5 +103,5 @@ async def ur_login_callback(type:str, code:str) -> FileResponse:
                                 )
                     else:
                         return HTMLResponse(
-                                    f"""<p>LinChan3 login succeeded: {nickname}</p>"""
-                                )
+                            f"""<p>LinChan3 login succeeded: {nickname}</p>"""
+                        )

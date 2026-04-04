@@ -19,6 +19,7 @@ from typing import Any
 
 from sqlalchemy import *
 
+import auth
 import LCRadio
 import yggdrasil
 
@@ -301,3 +302,4 @@ app.include_router(web)
 app.include_router(LCRadio.api)
 app.include_router(yggdrasil.api)
 app.include_router(yggdrasil.texture_api)
+app.include_router(auth.api)
