@@ -5,3 +5,4 @@ package.json
 package-lock.json 
 disablemysql
 linchan3.db
+linchan3_users.json
