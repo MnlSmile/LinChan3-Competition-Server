@@ -17,15 +17,21 @@ from fastapi.responses import *
 from pydantic import BaseModel
 from typing import Any
 
+from sqlalchemy import *
+
 import LCRadio
 import yggdrasil
+
+"""
+fastapi dev main.py --port 5799 --host '0.0.0.0'
+"""
 
 class MySQLConnectionPool:
     def __init__(self) -> None:
         self.pool = None
     async def initialize(self):
         self.pool = await aiomysql.create_pool(
-            host='127.0.0.1',
+            host='smp.mnlsmile.cn',
             port=3306,
             user='MnlSmile',
             password=os.getenv('MYSQL_PASSWORD'),
@@ -55,10 +61,14 @@ def disable(*args, **kwargs):
     def _(*args, **kwargs): return
     return _
 
+run_on_pc = False
+
 @app.on_event("startup")
-#@disable
 async def startup_event():
+    global run_on_pc
     await pool.initialize()
+    if os.path.exists('./disablemysql'):
+        run_on_pc = True
 
 class POFMetadata(BaseModel):
     uuid:str
@@ -281,9 +291,13 @@ async def server_status() -> dict:
     ram = [_mem.total, _mem.used, _mem.percent]
     return {
         "cpu": cpu,
-        "ram": ram
+        "ram": ram,
+        "runonpc": run_on_pc
     }
 
 
 app.include_router(api)
 app.include_router(web)
+app.include_router(LCRadio.api)
+app.include_router(yggdrasil.api)
+app.include_router(yggdrasil.texture_api)

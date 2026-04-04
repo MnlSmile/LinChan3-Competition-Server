@@ -3,3 +3,5 @@ __pycache__
 2026_Time_Train_mc_scripts
 package.json
 package-lock.json 
+disablemysql
+linchan3.db
