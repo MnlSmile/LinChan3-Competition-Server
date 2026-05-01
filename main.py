@@ -21,7 +21,7 @@ from sqlalchemy import *
 
 import auth
 import LCRadio
-import yggdrasil
+import yggdrasil_temporary
 
 """
 fastapi dev main.py --port 5799 --host '0.0.0.0'
@@ -56,7 +56,7 @@ app = FastAPI()
 api = APIRouter(prefix='/LinChan3-Competition/api/v1')
 web = APIRouter(prefix='/LinChan3-Competition/web')
 app.include_router(LCRadio.api)
-app.include_router(yggdrasil.api)
+app.include_router(yggdrasil_temporary.api)
 
 def disable(*args, **kwargs):
     def _(*args, **kwargs): return
@@ -300,6 +300,6 @@ async def server_status() -> dict:
 app.include_router(api)
 app.include_router(web)
 app.include_router(LCRadio.api)
-app.include_router(yggdrasil.api)
-app.include_router(yggdrasil.texture_api)
+app.include_router(yggdrasil_temporary.api)
+app.include_router(yggdrasil_temporary.texture_api)
 app.include_router(auth.api)
