@@ -296,6 +296,10 @@ async def server_status() -> dict:
         "runonpc": run_on_pc
     }
 
+@app.get('/')
+async def index() -> FileResponse:
+    return FileResponse('./index.html')
+
 
 app.include_router(api)
 app.include_router(web)
